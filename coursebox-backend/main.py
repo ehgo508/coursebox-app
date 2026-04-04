@@ -45,20 +45,19 @@ def get_tour_data(keyword: str = None): # keyword 파라미터 추가
         url = "https://apis.data.go.kr/B551011/KorService2/areaBasedList2"
     
     params = {
-        "serviceKey": API_KEY,
-        "numOfRows": "9",
-        "pageNo": "Math.floor(Math.random() * 100) + 1",
-        "MobileOS": "ETC",
-        "MobileApp": "CourseBox",
-        "_type": "json",
-        "arrange": "C",
-    }
+    "serviceKey": API_KEY,
+    "numOfRows": "18", 
+    "pageNo": "1",
+    "MobileOS": "ETC",
+    "MobileApp": "CourseBox",
+    "_type": "json",
+    #"contentTypeId": "12",  # <-- 이 줄을 추가하면 '관광지'만 나옵니다!
+    "arrange": "A",
+}
 
     # 키워드가 있을 때만 keyword 파라미터 추가
     if keyword:
         params["keyword"] = keyword
-    else:
-        params["contentTypeId"] = "12"
     
     try:
         response = requests.get(url, params=params, verify=False)
