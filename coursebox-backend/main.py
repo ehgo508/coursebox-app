@@ -7,11 +7,24 @@ from dotenv import load_dotenv
 from urllib.parse import unquote
 from pydantic import BaseModel
 from typing import List
-
+import json
+from sqlalchemy.orm import Session
+from database import engine, SessionLocal
+from models import Base, Trip
+from fastapi import Depends
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 # 1. 환경 변수 로드
 load_dotenv()
 
 app = FastAPI()
+
+
+Base.metadata.create_all(bind=engine)
 
 # 2. CORS 설정
 app.add_middleware(
@@ -143,3 +156,37 @@ async def generate_ai_course(data: CourseRequest):
         return {"error": f"GPT API 통신 중 오류 발생: {str(e)}"}
 
 # 서버 실행 명령어: uvicorn main:app --reload
+
+@app.post("/api/trips")
+def save_trip(trip_data: dict, db: Session = Depends(get_db)):
+    trip = Trip(
+        region=trip_data.get("region"),
+        travel_style=trip_data.get("travel_style"),
+        start_time=trip_data.get("start_time"),
+        end_time=trip_data.get("end_time"),
+        result_json=json.dumps(trip_data.get("result"), ensure_ascii=False)
+    )
+
+    db.add(trip)
+    db.commit()
+    db.refresh(trip)
+
+    return {
+        "message": "여행 코스 저장 완료",
+        "trip_id": trip.id
+    }
+@app.get("/api/trips")
+def get_trips(db: Session = Depends(get_db)):
+    trips = db.query(Trip).order_by(Trip.created_at.desc()).all()
+
+    return [
+        {
+            "id": trip.id,
+            "region": trip.region,
+            "travel_style": trip.travel_style,
+            "start_time": trip.start_time,
+            "end_time": trip.end_time,
+            "created_at": trip.created_at
+        }
+        for trip in trips
+    ]
